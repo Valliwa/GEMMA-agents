@@ -1,0 +1,791 @@
+Message from role=system
+Text ----------
+You are an outer-loop entrypoint orchestrator for an agent system which is broken up into sequential agent runss. This is done for context window management purposes; each agent will run for as long as it can / needs and then return a handoff note which will allow you to re-start a new agent with sufficient context about existing work to hit the ground running.
+
+Your single goal is to ensure that the user request is solved or otherwise fulfilled.
+
+Treat the agent calls as self-contained attempts to solve the problem. If the problem is significiant or multi-part, you may break it down into smaller pieces to avoid the risk that an agent will run out of context before completing its assigned sub-task.
+
+Your approach is to:
+1. Understand the problem statement to determine its nature and requirements, and whether it needs to be broken up into several agent invocations.
+
+2. Invoke reasoning structures: tools ending in 'reasoning_structure' are here to guide you along certain tasks. If one seems appropriate, invoke it early as soon as you have identified the situation
+
+3. Sequentially delegate to sub-agents: call an appropriate sub-agent, taking care to accurately and completely relay the problem details in order for it to successfully fulfil your intent for this step.
+
+4. Continually evaluate results and progress, by scrutinizing the agent's response. Also understand that the agent's response may contain new and surprising information or results that you don't have and which result from unseen work. Aim to learn from this information, and update your beliefs, while also using critical judgement to assess plausibility and completeness.
+
+5. Verify the work:
+   - If results raise doubts or inconsistencies, invoke an additional agent for independent validation.
+   - Repeat delegation and review until you're confident in the achieved solution
+   - Do not modify results or perform tasks directly; maintain your role as orchestrator.
+
+Your high-level objective is to successfully orchestrate and delegate your agent(s) to deliver a verified solution that you will own, defend and be responsible for through systematic delegation, rigorous evaluation, and comprehensive oversight, without direct intervention in the task execution.
+
+
+Very important instruction:
+Once you are satisfied that the task is complete and whatever answer or response has been submitted, you MUST generate call your `complete` tool to exit.
+
+Message from role=user
+Text ----------
+Your task is to orchestrate one or more agents sequentially to solve the problem. Here is the problem to solve:
+
+<problem_statement>
+Write a python script for a bouncing yellow ball within a square, make sure to handle collision detection properly. Make the square slowly rotate. Implement it in python. Make sure the ball stays within the square.
+</problem_statement>
+
+As the entrypoint orchestrator, your role is solely to coordinate and direct agents, communicating results between them.
+
+Agents won't see or be able to directly reference the initial problem statement that you can see. It is your job to effectively decompose it, and provide clear, complete and comprehensive direction to your agent(s).
+
+You have access to file and directory viewing tools to help you understand the context and best fulfil your role as the router and entrypoint orchestrator.
+
+You have access to reasoning structures (tool with names ending in _reasoning_structure). If you find an appropriate one, you *must* invoke this reasoning structure tool.
+
+Your high level approach should be to
+1. Understand the problem, decompose it, and plan out how to break it down into agent invocations.
+2. Invoke any appropriate reasoning structures - skipping this step if none are appropriate
+3. Invoke the agent, carefully articulating and relaying the problem. Dynamically re-plan and integrate the results from each agent result.
+4. For complex problems, verify the solution
+5. Synthesise a final answer by consolidating the work of the agent(s) into a coherent final answer that fully addresses the problem statement. Note that for some problems which don't explicitly resemble questions, you may simply submit 'done' as the answer once undertaking the work elsewhere.
+
+Important guidelines:
+- You MUST make at least one agent call, otherwise you have failed as the router
+- You MUST make use of reasoning structures, however only if one is immediately applicable to the problem at hand
+- Trust your sub-agents' expertise but exercise critical judgement over their answers
+- DO NOT attempt to do the substantive work yourself
+- You must have made at least one call to the submit_answer tool before completing. If the problem does not have an obvious answer to submit, simply submit 'done' when the task has been completed elsewhere.
+
+The time at which this prompt was written was 2025-05-26 13:25:17.
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:17>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:17>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:17>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:17>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:17>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:18>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:19>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:20>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>
+
+
+Message from role=assistant
+Text ----------
+Error in async _call_gemma: super(): no arguments
+
+Message from role=user
+Text ----------
+
+<APPLICATION_ERROR - 13:25:21>
+You completed with a normal stop token and no tool calls. If this was unintentional, closely read your tool use instructions again. If you wish to exit the agent loop, you MUST do so by invoking the `complete` tool.Remember, to invoke a tool you must directly generate <TOOL_CALL>...</TOOL_CALL>, and to invoke an agent you must use <AGENT_CALL>...</AGENT_CALL> in your message.
+</APPLICATION_ERROR>

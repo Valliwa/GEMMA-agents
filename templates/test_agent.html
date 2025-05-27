@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Test Agent - SICA Web Interface{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-flask"></i> Interactive Agent Testing</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Input</h6>
+                        <div class="mb-3">
+                            <label for="test-prompt" class="form-label">Prompt</label>
+                            <textarea id="test-prompt" class="form-control" rows="8" placeholder="Enter your prompt here...">Write a Python function to calculate the fibonacci sequence up to n terms.</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="max-tokens" class="form-label">Max Tokens</label>
+                                <input type="number" id="max-tokens" class="form-control" value="1000" min="50" max="4000">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Temperature</label>
+                                <input type="number" class="form-control" value="0.7" min="0" max="1" step="0.1">
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-primary" onclick="testAgent()">
+                                <i class="fas fa-play"></i> Test Agent
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearAll()">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>Response</h6>
+                        <div id="response-area" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
+                            <div class="text-muted text-center">
+                                <i class="fas fa-arrow-left"></i> Enter a prompt and click "Test Agent" to see the response
+                            </div>
+                        </div>
+                        
+                        <div id="response-info" class="mt-2" style="display: none;">
+                            <small class="text-muted">
+                                Response time: <span id="response-time">-</span> | 
+                                Input tokens: <span id="input-tokens">-</span> | 
+                                Output tokens: <span id="output-tokens">-</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function testAgent() {
+    const prompt = document.getElementById('test-prompt').value;
+    const maxTokens = document.getElementById('max-tokens').value;
+    const responseArea = document.getElementById('response-area');
+    const responseInfo = document.getElementById('response-info');
+    
+    if (!prompt.trim()) {
+        alert('Please enter a prompt');
+        return;
+    }
+    
+    // Show loading
+    responseArea.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Generating response...</div>';
+    responseInfo.style.display = 'none';
+    
+    // Make API call
+    fetch('/api/test_prompt', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            prompt: prompt,
+            max_tokens: parseInt(maxTokens)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Display response
+            responseArea.innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit;">${data.content}</pre>`;
+            
+            // Show info
+            document.getElementById('response-time').textContent = `${data.response_time.toFixed(2)}s`;
+            document.getElementById('input-tokens').textContent = data.usage.input_tokens || 0;
+            document.getElementById('output-tokens').textContent = data.usage.output_tokens || 0;
+            responseInfo.style.display = 'block';
+            
+        } else {
+            responseArea.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        responseArea.innerHTML = `<div class="alert alert-danger"><strong>Network Error:</strong> ${error}</div>`;
+    });
+}
+
+function clearAll() {
+    document.getElementById('test-prompt').value = '';
+    document.getElementById('response-area').innerHTML = '<div class="text-muted text-center"><i class="fas fa-arrow-left"></i> Enter a prompt and click "Test Agent" to see the response</div>';
+    document.getElementById('response-info').style.display = 'none';
+}
+</script>
+{% endblock %}

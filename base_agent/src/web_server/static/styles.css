@@ -1,0 +1,171 @@
+/* Base styles */
+body {
+  font-family: "Inter", sans-serif;
+  color: #1f2937;
+}
+
+/* Global styles */
+.execution-tree,
+#event-stream {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* Header styles */
+.header {
+  background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+}
+
+/* Tree visualization styles */
+.execution-tree {
+  position: relative;
+}
+
+.execution-tree .node {
+  margin-bottom: 0.25rem;
+  position: relative;
+}
+
+.execution-tree .node-content {
+  margin-left: 1.25rem;
+  position: relative;
+}
+
+/* Vertical line for tree structure */
+.execution-tree .node-content::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #e2e8f0;
+}
+
+/* Hover effect for collapsible areas */
+.execution-tree .node-content:hover::before {
+  background-color: #93c5fd;
+}
+
+/* Reduce vertical space */
+.execution-tree .event-entry,
+#event-stream .event {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+
+/* Event line styles */
+.event-line {
+  position: relative;
+}
+
+/* Event stream styles */
+#event-stream .event {
+  margin-bottom: 1rem;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+#event-stream .event-content,
+#event-stream .event-full-content {
+  background-color: #f8fafc;
+  transition: background-color 0.2s;
+}
+
+#event-stream .event-content:hover,
+#event-stream .event-full-content:hover {
+  background-color: #f1f5f9;
+}
+
+/* Execution tree hover styles */
+.execution-tree .cursor-pointer {
+  transition: background-color 0.2s;
+}
+
+.execution-tree .cursor-pointer:hover {
+  background-color: #eff6ff;
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.status-pending {
+  background-color: #fbbf24;
+}
+
+.status-running {
+  background-color: #60a5fa;
+  animation: pulse 2s infinite;
+}
+
+.status-success {
+  background-color: #34d399;
+}
+
+.status-failed {
+  background-color: #f87171;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Animation */
+@keyframes highlight {
+  0% {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.event-highlight {
+  animation: highlight 2s ease-in-out;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Utility classes */
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

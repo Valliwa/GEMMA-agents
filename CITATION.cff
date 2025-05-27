@@ -1,0 +1,14 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Robeyns
+    given-names: Maxime
+    orcid: https://orcid.org/0000-0001-9802-9597
+  - family-names: Szummer
+    given-names: Martin
+  - family-names: Laurence
+    given-names: Aitchison
+title: "Self-Improving Coding Agent"
+version: 0.0.1
+date-released: 2025-04-12
+repository-code: "https://github.com/MaximeRobeyns/self_improving_coding_agent"

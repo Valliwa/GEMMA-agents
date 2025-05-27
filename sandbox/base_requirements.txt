@@ -1,0 +1,4 @@
+# System-wide Python packages for development
+# Intentionally _not_ pinning versions so we get recent versions on every build
+black
+flake8

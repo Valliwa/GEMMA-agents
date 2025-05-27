@@ -1,0 +1,8 @@
+EXECUTION TREE
+==============
+1 main [agent_c1567c1e] (0.6s | 0 tokens (cached 0.00%) | $0.000 | Failed)
+   [Stats] Events: 
+
+Total Duration: 0.6s
+Total Tokens: 0 (of which cached 0)
+Total Cost: $0.000

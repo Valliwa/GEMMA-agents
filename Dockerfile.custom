@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+# Don't create user home directories that cause permission issues
+# Use /app as working directory instead
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY base_agent/requirements.txt /app/
+RUN pip install -r requirements.txt
+
+# Copy the agent code
+COPY base_agent /app/base_agent
+COPY . /app/
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV HOME=/tmp
+
+# Use root user to avoid permission issues (for testing)
+USER root
+
+# Default command
+CMD ["bash"]
