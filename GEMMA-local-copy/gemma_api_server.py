@@ -100,7 +100,7 @@ async def load_model():
     logger.info("Loading Gemma model (without quantization to avoid cache issues)...")
     
     # Replace with your actual Hugging Face token
-    token = "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"  # TODO: Replace with your token
+    token = "hf_............"  # TODO: Replace with your hugging face token
     model_name = "google/gemma-2-9b-it"
     
     try:
