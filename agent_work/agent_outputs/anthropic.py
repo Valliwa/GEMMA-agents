@@ -60,7 +60,7 @@ class GemmaAnthropicProvider:
         payload = {
             "model": "gemma-3-27b-it",
             "messages": converted_messages,
-            "max_tokens": 256,  # Reduced for faster responses
+            "max_tokens": 128,  # Reduced for faster responses
             "temperature": 0.7,
             "stream": False
         }
@@ -72,7 +72,7 @@ class GemmaAnthropicProvider:
                 lambda: self.session.post(
                     f"{self.base_url}/v1/chat/completions",
                     json=payload,
-                    timeout=520  # Reduced from 300 to 120 seconds
+                    timeout=120  # Reduced from 300 to 120 seconds
                 )
             )
             response.raise_for_status()

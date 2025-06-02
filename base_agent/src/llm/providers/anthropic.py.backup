@@ -1,0 +1,367 @@
+"""
+Anthropic provider that routes all requests to local Gemma server
+Replace base_agent/src/llm/providers/anthropic.py with this file
+"""
+
+import logging
+import requests
+import json
+import asyncio
+from typing import Dict, Any, List, Optional, Union
+
+logger = logging.getLogger(__name__)
+
+class GemmaAnthropicProvider:
+    """Anthropic provider that routes to Gemma server"""
+    
+    def __init__(self, api_key: str = None, base_url: str = "http://localhost:8000"):
+        self.api_key = api_key  # Ignored, just for compatibility
+        self.base_url = base_url
+        self.session = requests.Session()
+        self.session.headers.update({'Content-Type': 'application/json'})
+        
+        logger.info(f"🔄 Anthropic provider initialized -> routing to Gemma at {base_url}")
+    
+    def _convert_messages_to_dict(self, messages: List[Any]) -> List[Dict]:
+        """Convert Message objects to dictionaries for JSON serialization"""
+        converted_messages = []
+        
+        for msg in messages:
+            if hasattr(msg, '__dict__'):
+                # It's a Message object, convert to dict
+                msg_dict = {
+                    "role": getattr(msg, 'role', 'user'),
+                    "content": self._extract_content(msg)
+                }
+                converted_messages.append(msg_dict)
+            elif isinstance(msg, dict):
+                # Already a dict, just ensure it has the right format
+                converted_messages.append({
+                    "role": msg.get('role', 'user'),
+                    "content": msg.get('content', str(msg))
+                })
+            else:
+                # Convert anything else to a user message
+                converted_messages.append({
+                    "role": "user",
+                    "content": str(msg)
+                })
+        
+        return converted_messages
+    
+    def _truncate_messages(self, messages: List[Dict], max_chars: int = 2000) -> List[Dict]:
+        """Truncate messages to prevent timeouts with long inputs"""
+        truncated = []
+        total_chars = 0
+        
+        for msg in messages:
+            content = str(msg.get('content', ''))
+            if total_chars + len(content) > max_chars:
+                # Truncate this message
+                remaining_chars = max_chars - total_chars
+                if remaining_chars > 100:  # Only include if we have reasonable space
+                    truncated_content = content[:remaining_chars] + "...[truncated]"
+                    truncated.append({
+                        "role": msg.get('role', 'user'),
+                        "content": truncated_content
+                    })
+                break
+            else:
+                truncated.append(msg)
+                total_chars += len(content)
+        
+        return truncated if truncated else [{"role": "user", "content": "Please provide a brief analysis."}]
+    
+    def _extract_content(self, msg: Any) -> str:
+        """Extract text content from various message formats"""
+        if hasattr(msg, 'content'):
+            content = msg.content
+            if isinstance(content, list):
+                # Handle list of content blocks
+                text_parts = []
+                for block in content:
+                    if hasattr(block, 'text'):
+                        text_parts.append(block.text)
+                    elif isinstance(block, dict) and 'text' in block:
+                        text_parts.append(block['text'])
+                    else:
+                        text_parts.append(str(block))
+                return ' '.join(text_parts)
+            elif hasattr(content, 'text'):
+                return content.text
+            else:
+                return str(content)
+        else:
+            return str(msg)
+    
+    async def create_completion(self, messages: List[Any], model: str = None, **kwargs) -> Any:
+        """Create completion using Gemma server (async)"""
+        logger.info(f"🎯 Anthropic completion request intercepted -> Gemma")
+        
+        # Convert messages to serializable format
+        converted_messages = self._convert_messages_to_dict(messages)
+        
+        # Try different API endpoints in order of preference
+        endpoints_to_try = [
+            # OpenAI-compatible (most common)
+            {
+                "url": f"{self.base_url}/v1/chat/completions",
+                "payload": {
+                    "model": "gemma-3-27b-it",
+                    "messages": converted_messages,
+                    "max_tokens": min(kwargs.get("max_tokens", 512), 512),  # Reduced from 1024
+                    "temperature": kwargs.get("temperature", 0.7),
+                    "top_p": kwargs.get("top_p", 1.0),
+                    "stream": False
+                },
+                "response_key": "choices"
+            },
+            # Anthropic-style (original attempt)
+            {
+                "url": f"{self.base_url}/v1/messages",
+                "payload": {
+                    "model": "gemma-3-27b-it",
+                    "messages": converted_messages,
+                    "max_tokens": kwargs.get("max_tokens", 1024),
+                    "temperature": kwargs.get("temperature", 0.7),
+                    "top_p": kwargs.get("top_p", 1.0)
+                },
+                "response_key": "content"
+            },
+            # Simple generate endpoint
+            {
+                "url": f"{self.base_url}/generate",
+                "payload": {
+                    "prompt": self._messages_to_prompt(converted_messages),
+                    "max_tokens": kwargs.get("max_tokens", 1024),
+                    "temperature": kwargs.get("temperature", 0.7)
+                },
+                "response_key": "text"
+            },
+            # Ollama-style
+            {
+                "url": f"{self.base_url}/api/chat",
+                "payload": {
+                    "model": "gemma-3-27b-it",
+                    "messages": converted_messages
+                },
+                "response_key": "message"
+            }
+        ]
+        
+        loop = asyncio.get_event_loop()
+        
+        for i, endpoint in enumerate(endpoints_to_try):
+            try:
+                logger.info(f"🔄 Trying endpoint {i+1}/{len(endpoints_to_try)}: {endpoint['url']}")
+                
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: self.session.post(
+                        endpoint["url"],
+                        json=endpoint["payload"],
+                        timeout=600  # Increased to 10 minutes
+                    )
+                )
+                response.raise_for_status()
+                result = response.json()
+                
+                # Extract text from different response formats
+                text_content = self._extract_text_from_response(result, endpoint["response_key"])
+                
+                if text_content:
+                    logger.info(f"✅ Successfully got response from {endpoint['url']}")
+                    
+                    # Create response object with .content attribute (required by agent framework)
+                    class AnthropicResponse:
+                        def __init__(self, text):
+                            self.content = [AnthropicContentBlock(text)]
+                            self.id = f"msg_{hash(str(converted_messages))}"
+                            self.type = "message"
+                            self.role = "assistant"
+                            self.model = model or "gemma-3-27b-it"
+                            self.stop_reason = "end_turn"
+                            self.stop_sequence = None
+                            self.usage = AnthropicUsage(
+                                input_tokens=sum(len(msg.get("content", "").split()) for msg in converted_messages),
+                                output_tokens=len(text.split())
+                            )
+                    
+                    class AnthropicContentBlock:
+                        def __init__(self, text):
+                            self.type = "text"
+                            self.text = text
+                    
+                    class AnthropicUsage:
+                        def __init__(self, input_tokens, output_tokens):
+                            self.input_tokens = input_tokens
+                            self.output_tokens = output_tokens
+                    
+                    return AnthropicResponse(text_content)
+                
+            except Exception as e:
+                logger.warning(f"⚠️ Endpoint {endpoint['url']} failed: {e}")
+                continue
+        
+        # If all endpoints failed
+        logger.error("❌ All Gemma endpoints failed")
+        
+        # Return error response object
+        class ErrorResponse:
+            def __init__(self, error_msg):
+                self.content = [AnthropicContentBlock(f"Error: {error_msg}")]
+                self.id = "error"
+                self.type = "error"
+                self.error = {"type": "api_error", "message": error_msg}
+        
+        class AnthropicContentBlock:
+            def __init__(self, text):
+                self.type = "text"
+                self.text = text
+        
+        return ErrorResponse("All Gemma server endpoints failed")
+    
+    def _messages_to_prompt(self, messages: List[Dict]) -> str:
+        """Convert messages to a single prompt string"""
+        prompt_parts = []
+        for msg in messages:
+            role = msg.get('role', 'user')
+            content = msg.get('content', '')
+            if role == 'user':
+                prompt_parts.append(f"User: {content}")
+            elif role == 'assistant':
+                prompt_parts.append(f"Assistant: {content}")
+            elif role == 'system':
+                prompt_parts.append(f"System: {content}")
+        return "\n".join(prompt_parts) + "\nAssistant:"
+    
+    def _extract_text_from_response(self, result: Dict, response_key: str) -> Optional[str]:
+        """Extract text content from various response formats"""
+        try:
+            if response_key == "choices" and "choices" in result:
+                # OpenAI format: result["choices"][0]["message"]["content"]
+                return result["choices"][0]["message"]["content"]
+            elif response_key == "content" and "content" in result:
+                # Anthropic format: result["content"][0]["text"]
+                content = result["content"]
+                if isinstance(content, list) and len(content) > 0:
+                    return content[0].get("text", "")
+                return str(content)
+            elif response_key == "text" and "text" in result:
+                # Simple text format: result["text"]
+                return result["text"]
+            elif response_key == "message" and "message" in result:
+                # Ollama format: result["message"]["content"]
+                return result["message"]["content"]
+            else:
+                # Try to find text in any common location
+                if isinstance(result, dict):
+                    # Try common response keys
+                    for key in ["text", "response", "output", "generated_text", "content"]:
+                        if key in result:
+                            value = result[key]
+                            if isinstance(value, str):
+                                return value
+                            elif isinstance(value, list) and len(value) > 0:
+                                return str(value[0])
+                return None
+        except Exception as e:
+            logger.error(f"Error extracting text from response: {e}")
+            return None
+    
+    async def create_continuation_completion(self, messages: List[Any], model: str = None, **kwargs) -> Dict[str, Any]:
+        """Create continuation completion - same as regular completion"""
+        logger.info(f"🔄 Continuation completion request intercepted -> Gemma")
+        return await self.create_completion(messages, model, **kwargs)
+    
+    async def create_streaming_completion(self, messages: List[Any], model: str = None, **kwargs) -> Dict[str, Any]:
+        """Create streaming completion - fallback to regular completion"""
+        logger.info(f"🔄 Streaming completion request intercepted -> Gemma (non-streaming)")
+        return await self.create_completion(messages, model, **kwargs)
+    
+    async def messages(self, **kwargs):
+        """Anthropic messages API compatibility"""
+        messages = kwargs.get("messages", [])
+        return await self.create_completion(messages, **kwargs)
+
+
+# Anthropic client creation functions
+def create_anthropic_client(api_key: str = None, **kwargs) -> GemmaAnthropicProvider:
+    """Create Anthropic client that routes to Gemma"""
+    logger.info("🔄 create_anthropic_client called -> Gemma")
+    return GemmaAnthropicProvider(api_key=api_key, **kwargs)
+
+
+def get_anthropic_client(api_key: str = None, **kwargs) -> GemmaAnthropicProvider:
+    """Get Anthropic client that routes to Gemma"""
+    logger.info("🔄 get_anthropic_client called -> Gemma")
+    return GemmaAnthropicProvider(api_key=api_key, **kwargs)
+
+
+class AnthropicProvider:
+    """Main Anthropic provider class"""
+    
+    def __init__(self, api_key: str = None, **kwargs):
+        self.client = GemmaAnthropicProvider(api_key=api_key, **kwargs)
+        logger.info("🔄 AnthropicProvider initialized -> Gemma")
+    
+    async def create_completion(self, **kwargs):
+        """Create completion"""
+        return await self.client.create_completion(**kwargs)
+    
+    async def create_continuation_completion(self, **kwargs):
+        """Create continuation completion - required by agent framework"""
+        logger.info("🔄 create_continuation_completion called -> Gemma")
+        return await self.client.create_completion(**kwargs)
+    
+    async def create_streaming_completion(self, **kwargs):
+        """Create streaming completion - fallback to regular completion"""
+        logger.info("🔄 create_streaming_completion called -> Gemma (non-streaming)")
+        return await self.client.create_completion(**kwargs)
+    
+    async def messages(self, **kwargs):
+        """Messages API"""
+        return await self.client.messages(**kwargs)
+    
+    def __call__(self, **kwargs):
+        """Make provider callable"""
+        return self.messages(**kwargs)
+
+
+# For backward compatibility - async functions
+async def anthropic_completion(**kwargs):
+    """Completion function for backward compatibility"""
+    logger.info("🔄 anthropic_completion called -> Gemma")
+    provider = GemmaAnthropicProvider()
+    return await provider.create_completion(**kwargs)
+
+
+async def create_streaming_completion(**kwargs):
+    """Streaming completion function for backward compatibility"""
+    logger.info("🔄 create_streaming_completion called -> Gemma")
+    provider = GemmaAnthropicProvider()
+    return await provider.create_completion(**kwargs)
+
+
+async def create_continuation_completion(**kwargs):
+    """Continuation completion function for backward compatibility"""
+    logger.info("🔄 create_continuation_completion called -> Gemma")
+    provider = GemmaAnthropicProvider()
+    return await provider.create_completion(**kwargs)
+
+
+# Main provider instance
+provider = AnthropicProvider()
+
+# Export all the functions the agent expects
+__all__ = [
+    'create_anthropic_client',
+    'get_anthropic_client', 
+    'AnthropicProvider',
+    'anthropic_completion',
+    'create_streaming_completion',
+    'create_continuation_completion',
+    'provider'
+]
+
+logger.info("✅ Anthropic provider module loaded -> All requests route to Gemma")

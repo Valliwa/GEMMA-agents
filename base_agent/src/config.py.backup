@@ -1,4 +1,3 @@
-from typing import List, Dict, Any
 """
 Complete config.py file for the self-improving coding agent with Gemma integration
 Replace the entire base_agent/src/config.py with this file

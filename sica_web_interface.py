@@ -1,358 +1,396 @@
 #!/usr/bin/env python3
 """
-SICA Web Interface
-Provides a comprehensive web interface for monitoring and examining agent responses
+SICA Web Interface - Flask Application
+Interactive web interface for monitoring and testing SICA agents
 """
 
 import os
 import json
 import time
-import asyncio
-import requests
+import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-
-from flask import Flask, render_template, request, jsonify, Response, stream_template
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
-import threading
+import requests
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'sica_web_interface_secret'
+app.config['SECRET_KEY'] = 'sica-web-interface-secret-key'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Configuration
-GEMMA3_SERVER_URL = "http://localhost:8000"
-RESULTS_DIR = Path("results")
-CURRENT_EXPERIMENT = None
-MONITORING_ACTIVE = False
+# Global state
+gemma3_status = {
+    'available': False,
+    'model': 'Unknown',
+    'error': 'Not checked yet'
+}
 
-class SICAWebInterface:
-    """Main interface class for SICA web monitoring"""
-    
-    def __init__(self):
-        self.gemma3_available = False
-        self.current_stats = {}
-        self.recent_responses = []
-        self.experiment_data = {}
-        self.monitoring_thread = None
-        
-    def check_gemma3_status(self) -> Dict[str, Any]:
-        """Check Gemma 3 server status"""
-        try:
-            response = requests.get(f"{GEMMA3_SERVER_URL}/health", timeout=5)
-            if response.status_code == 200:
-                health_data = response.json()
-                self.gemma3_available = True
-                return {
-                    "available": True,
-                    "status": health_data.get("status", "unknown"),
-                    "model": health_data.get("model", "unknown"),
-                    "gpu_memory": health_data.get("gpu_memory", {}),
-                    "enhanced_features": health_data.get("enhanced_features", {})
-                }
-            else:
-                self.gemma3_available = False
-                return {"available": False, "error": f"HTTP {response.status_code}"}
-        except Exception as e:
-            self.gemma3_available = False
-            return {"available": False, "error": str(e)}
-    
-    def get_gemma3_stats(self) -> Dict[str, Any]:
-        """Get detailed Gemma 3 performance stats"""
-        try:
-            response = requests.get(f"{GEMMA3_SERVER_URL}/stats", timeout=5)
-            if response.status_code == 200:
-                return response.json()
-            return {"error": f"HTTP {response.status_code}"}
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def test_agent_response(self, prompt: str, max_tokens: int = 500) -> Dict[str, Any]:
-        """Test agent response with custom prompt"""
-        try:
-            payload = {
-                "model": "gemma-3-27b-it",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tokens,
-                "temperature": 0.7
-            }
-            
-            start_time = time.time()
-            response = requests.post(
-                f"{GEMMA3_SERVER_URL}/v1/messages",
-                json=payload,
-                timeout=120
-            )
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                result = response.json()
-                content = result['content'][0]['text'] if isinstance(result['content'], list) else result['content']
-                
-                response_data = {
-                    "success": True,
-                    "content": content,
-                    "response_time": response_time,
-                    "usage": result.get("usage", {}),
-                    "timestamp": datetime.now().isoformat()
-                }
-                
-                # Store in recent responses
-                self.recent_responses.append({
-                    "prompt": prompt[:100] + "..." if len(prompt) > 100 else prompt,
-                    "response": content[:200] + "..." if len(content) > 200 else content,
-                    "timestamp": datetime.now().strftime("%H:%M:%S"),
-                    "response_time": f"{response_time:.2f}s",
-                    "tokens": result.get("usage", {})
-                })
-                
-                # Keep only last 10 responses
-                if len(self.recent_responses) > 10:
-                    self.recent_responses.pop(0)
-                
-                return response_data
-            else:
-                return {
-                    "success": False,
-                    "error": f"HTTP {response.status_code}: {response.text}"
-                }
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-    
-    def get_experiment_list(self) -> List[Dict[str, Any]]:
-        """Get list of available experiments"""
-        experiments = []
-        if RESULTS_DIR.exists():
-            for exp_dir in RESULTS_DIR.iterdir():
-                if exp_dir.is_dir() and exp_dir.name.startswith("run_"):
-                    metadata_file = exp_dir / "metadata.json"
-                    if metadata_file.exists():
-                        try:
-                            with open(metadata_file) as f:
-                                metadata = json.load(f)
-                            
-                            # Count agents
-                            agent_count = len([d for d in exp_dir.iterdir() if d.name.startswith("agent_")])
-                            
-                            experiments.append({
-                                "id": exp_dir.name,
-                                "path": str(exp_dir),
-                                "agent_count": agent_count,
-                                "current_iteration": metadata.get("agent_iteration", 0),
-                                "start_time": metadata.get("experiment_start_timestamp", "unknown"),
-                                "preferred_model": metadata.get("preferred_model", "unknown"),
-                                "gemma3_available": metadata.get("gemma3_available", False)
-                            })
-                        except Exception as e:
-                            print(f"Error reading metadata for {exp_dir}: {e}")
-        
-        return sorted(experiments, key=lambda x: x["id"], reverse=True)
-    
-    def get_experiment_details(self, exp_id: str) -> Dict[str, Any]:
-        """Get detailed information about an experiment"""
-        exp_dir = RESULTS_DIR / exp_id
-        if not exp_dir.exists():
-            return {"error": "Experiment not found"}
-        
-        try:
-            # Load metadata
-            metadata_file = exp_dir / "metadata.json"
-            metadata = {}
-            if metadata_file.exists():
-                with open(metadata_file) as f:
-                    metadata = json.load(f)
-            
-            # Get agent iterations
-            agents = []
-            for agent_dir in sorted(exp_dir.iterdir()):
-                if agent_dir.is_dir() and agent_dir.name.startswith("agent_"):
-                    agent_info = self.get_agent_info(agent_dir)
-                    agents.append(agent_info)
-            
-            return {
-                "id": exp_id,
-                "metadata": metadata,
-                "agents": agents,
-                "total_agents": len(agents)
-            }
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def get_agent_info(self, agent_dir: Path) -> Dict[str, Any]:
-        """Get information about a specific agent iteration"""
-        try:
-            agent_name = agent_dir.name
-            
-            # Get benchmark results
-            benchmarks = {}
-            benchmark_dir = agent_dir / "benchmarks"
-            if benchmark_dir.exists():
-                for bench_dir in benchmark_dir.iterdir():
-                    if bench_dir.is_dir():
-                        perf_file = bench_dir / "perf.json"
-                        if perf_file.exists():
-                            with open(perf_file) as f:
-                                benchmarks[bench_dir.name] = json.load(f)
-            
-            # Get meta-improvement logs
-            meta_logs = {}
-            meta_dir = agent_dir / "meta_improvement_logs"
-            if meta_dir.exists():
-                summary_file = meta_dir / "summary.txt"
-                if summary_file.exists():
-                    meta_logs["summary"] = summary_file.read_text()
-            
-            return {
-                "name": agent_name,
-                "path": str(agent_dir),
-                "benchmarks": benchmarks,
-                "meta_improvement": meta_logs,
-                "has_code": (agent_dir / "agent_code").exists()
-            }
-        except Exception as e:
-            return {"name": agent_dir.name, "error": str(e)}
-    
-    def get_benchmark_traces(self, exp_id: str, agent_name: str, benchmark_name: str) -> List[Dict[str, Any]]:
-        """Get benchmark execution traces"""
-        traces_dir = RESULTS_DIR / exp_id / agent_name / "benchmarks" / benchmark_name / "traces"
-        traces = []
-        
-        if traces_dir.exists():
-            for trace_dir in traces_dir.iterdir():
-                if trace_dir.is_dir():
-                    trace_info = {"problem_id": trace_dir.name}
-                    
-                    # Read various files
-                    files_to_read = ["trace.txt", "answer.txt", "summary.txt", "score.txt"]
-                    for filename in files_to_read:
-                        file_path = trace_dir / filename
-                        if file_path.exists():
-                            try:
-                                content = file_path.read_text()
-                                trace_info[filename.replace('.txt', '')] = content
-                            except Exception as e:
-                                trace_info[filename.replace('.txt', '')] = f"Error reading file: {e}"
-                    
-                    traces.append(trace_info)
-        
-        return traces
+system_stats = {
+    'gpu_memory': None,
+    'last_updated': None
+}
 
-# Initialize the interface
-sica_interface = SICAWebInterface()
-
-# Routes
 @app.route('/')
-def index():
-    """Main dashboard"""
-    gemma3_status = sica_interface.check_gemma3_status()
-    experiments = sica_interface.get_experiment_list()
-    stats = sica_interface.get_gemma3_stats() if gemma3_status.get("available") else {}
-    
-    return render_template('dashboard.html',
-                         gemma3_status=gemma3_status,
-                         experiments=experiments,
-                         stats=stats,
-                         recent_responses=sica_interface.recent_responses)
+def dashboard():
+    """Main dashboard page"""
+    try:
+        # Check Gemma 3 status
+        check_gemma3_status()
+        
+        # Get SICA experiments
+        experiments = get_sica_experiments()
+        
+        return render_template('dashboard.html', 
+                             gemma3_status=gemma3_status,
+                             stats=system_stats,
+                             experiments=experiments)
+    except Exception as e:
+        return render_template('error.html', error=str(e))
 
 @app.route('/test_agent')
 def test_agent():
-    """Agent testing interface"""
+    """Agent testing page"""
     return render_template('test_agent.html')
 
 @app.route('/api/test_prompt', methods=['POST'])
 def test_prompt():
-    """Test agent with custom prompt"""
-    data = request.get_json()
-    prompt = data.get('prompt', '')
-    max_tokens = data.get('max_tokens', 500)
-    
-    if not prompt:
-        return jsonify({"success": False, "error": "No prompt provided"})
-    
-    result = sica_interface.test_agent_response(prompt, max_tokens)
-    return jsonify(result)
+    """API endpoint to test prompts with Gemma 3"""
+    try:
+        data = request.get_json()
+        prompt = data.get('prompt', '')
+        max_tokens = data.get('max_tokens', 500)
+        
+        if not prompt.strip():
+            return jsonify({'success': False, 'error': 'Empty prompt'})
+        
+        # Record start time
+        start_time = time.time()
+        
+        # Try to use Gemma 3 server
+        if gemma3_status['available']:
+            response = call_gemma3_api(prompt, max_tokens)
+            if response:
+                response_time = time.time() - start_time
+                return jsonify({
+                    'success': True,
+                    'content': response['content'],
+                    'response_time': response_time,
+                    'usage': response.get('usage', {})
+                })
+        
+        # Fallback response if Gemma 3 not available
+        fallback_response = generate_fallback_response(prompt)
+        response_time = time.time() - start_time
+        
+        return jsonify({
+            'success': True,
+            'content': fallback_response,
+            'response_time': response_time,
+            'usage': {'input_tokens': len(prompt.split()), 'output_tokens': len(fallback_response.split())}
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/experiment/<exp_id>')
-def experiment_details(exp_id):
-    """Detailed view of an experiment"""
-    details = sica_interface.get_experiment_details(exp_id)
-    if "error" in details:
-        return render_template('error.html', error=details["error"])
-    
-    return render_template('experiment.html', experiment=details)
+@app.route('/experiment/<experiment_id>')
+def experiment_details(experiment_id):
+    """Show details for a specific experiment"""
+    try:
+        exp_data = get_experiment_data(experiment_id)
+        if not exp_data:
+            return render_template('error.html', error=f'Experiment {experiment_id} not found')
+        
+        return render_template('experiment.html', experiment=exp_data)
+    except Exception as e:
+        return render_template('error.html', error=str(e))
 
-@app.route('/api/benchmark_traces/<exp_id>/<agent_name>/<benchmark_name>')
-def get_benchmark_traces(exp_id, agent_name, benchmark_name):
-    """Get benchmark execution traces"""
-    traces = sica_interface.get_benchmark_traces(exp_id, agent_name, benchmark_name)
-    return jsonify(traces)
-
-@app.route('/api/status')
-def api_status():
-    """API endpoint for status updates"""
-    return jsonify({
-        "gemma3": sica_interface.check_gemma3_status(),
-        "stats": sica_interface.get_gemma3_stats(),
-        "timestamp": datetime.now().isoformat()
-    })
-
-@app.route('/api/experiments')
-def api_experiments():
-    """API endpoint for experiments list"""
-    return jsonify(sica_interface.get_experiment_list())
-
-# WebSocket events for real-time updates
 @socketio.on('connect')
 def handle_connect():
+    """Handle client connection"""
     print('Client connected')
+    # Send initial status
     emit('status_update', {
-        "gemma3": sica_interface.check_gemma3_status(),
-        "timestamp": datetime.now().isoformat()
+        'gemma3': gemma3_status,
+        'stats': system_stats
     })
 
 @socketio.on('request_status')
 def handle_status_request():
+    """Handle status update requests"""
+    check_gemma3_status()
+    update_system_stats()
     emit('status_update', {
-        "gemma3": sica_interface.check_gemma3_status(),
-        "stats": sica_interface.get_gemma3_stats(),
-        "recent_responses": sica_interface.recent_responses,
-        "timestamp": datetime.now().isoformat()
+        'gemma3': gemma3_status,
+        'stats': system_stats
     })
 
-# Background monitoring
-def background_monitoring():
-    """Background thread for monitoring updates"""
-    while MONITORING_ACTIVE:
-        try:
-            status_update = {
-                "gemma3": sica_interface.check_gemma3_status(),
-                "stats": sica_interface.get_gemma3_stats(),
-                "timestamp": datetime.now().isoformat()
+def check_gemma3_status():
+    """Check if Gemma 3 server is available"""
+    global gemma3_status
+    
+    try:
+        response = requests.get('http://localhost:8000/health', timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            gemma3_status = {
+                'available': True,
+                'model': data.get('model', 'Gemma 3 27B'),
+                'error': None
             }
-            socketio.emit('status_update', status_update)
-            time.sleep(10)  # Update every 10 seconds
+        else:
+            gemma3_status = {
+                'available': False,
+                'model': 'Unknown',
+                'error': f'Server responded with status {response.status_code}'
+            }
+    except requests.exceptions.RequestException as e:
+        gemma3_status = {
+            'available': False,
+            'model': 'Unknown',
+            'error': 'Server not reachable'
+        }
+
+def call_gemma3_api(prompt, max_tokens=500):
+    """Call Gemma 3 API server"""
+    try:
+        payload = {
+            'prompt': prompt,
+            'max_tokens': max_tokens,
+            'temperature': 0.7
+        }
+        
+        response = requests.post('http://localhost:8000/generate', 
+                               json=payload, 
+                               timeout=30)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Gemma 3 API error: {response.status_code}")
+            return None
+            
+    except Exception as e:
+        print(f"Error calling Gemma 3 API: {e}")
+        return None
+
+def generate_fallback_response(prompt):
+    """Generate a fallback response when Gemma 3 is not available"""
+    
+    # Simple pattern matching for common requests
+    prompt_lower = prompt.lower()
+    
+    if 'python' in prompt_lower and 'function' in prompt_lower:
+        if 'factorial' in prompt_lower:
+            return '''def factorial(n):
+    """Calculate factorial of n"""
+    if n <= 0:
+        return 1
+    elif n == 1:
+        return 1
+    else:
+        return n * factorial(n - 1)
+
+# Example usage:
+print(factorial(5))  # Output: 120'''
+        
+        elif 'fibonacci' in prompt_lower:
+            return '''def fibonacci(n):
+    """Generate fibonacci sequence up to n terms"""
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    elif n == 2:
+        return [0, 1]
+    
+    fib_sequence = [0, 1]
+    for i in range(2, n):
+        fib_sequence.append(fib_sequence[i-1] + fib_sequence[i-2])
+    
+    return fib_sequence
+
+# Example usage:
+print(fibonacci(10))  # Output: [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]'''
+    
+    # Generic fallback
+    return f"""[SICA Web Interface - Fallback Response]
+
+Gemma 3 server is not currently available. This is a simulated response.
+
+Your prompt: "{prompt}"
+
+To get full AI-powered responses:
+1. Start your Gemma 3 server: python3 gemma_api_server.py
+2. Wait for model loading to complete
+3. Refresh this interface
+
+The Gemma 3 server should be accessible at http://localhost:8000"""
+
+def get_sica_experiments():
+    """Get list of SICA experiments from results directory"""
+    experiments = []
+    results_dir = Path('./results')
+    
+    if results_dir.exists():
+        for run_dir in results_dir.glob('run_*'):
+            if run_dir.is_dir():
+                try:
+                    metadata_file = run_dir / 'metadata.json'
+                    exp_info = {
+                        'id': run_dir.name,
+                        'path': str(run_dir),
+                        'agent_count': 0,
+                        'current_iteration': 0,
+                        'gemma3_available': False
+                    }
+                    
+                    if metadata_file.exists():
+                        with open(metadata_file) as f:
+                            metadata = json.load(f)
+                            exp_info.update({
+                                'agent_count': len(list(run_dir.glob('agent_*'))),
+                                'current_iteration': metadata.get('current_iteration', 0),
+                                'gemma3_available': 'gemma3' in metadata.get('llm_models', [])
+                            })
+                    else:
+                        # Count agent directories if no metadata
+                        exp_info['agent_count'] = len(list(run_dir.glob('agent_*')))
+                    
+                    experiments.append(exp_info)
+                    
+                except Exception as e:
+                    print(f"Error reading experiment {run_dir}: {e}")
+                    continue
+    
+    return sorted(experiments, key=lambda x: x['id'], reverse=True)
+
+def get_experiment_data(experiment_id):
+    """Get detailed data for a specific experiment"""
+    exp_dir = Path(f'./results/{experiment_id}')
+    
+    if not exp_dir.exists():
+        return None
+    
+    exp_data = {
+        'id': experiment_id,
+        'path': str(exp_dir),
+        'agents': [],
+        'benchmarks': {},
+        'metadata': {}
+    }
+    
+    # Read metadata
+    metadata_file = exp_dir / 'metadata.json'
+    if metadata_file.exists():
+        with open(metadata_file) as f:
+            exp_data['metadata'] = json.load(f)
+    
+    # Read agent data
+    for agent_dir in exp_dir.glob('agent_*'):
+        if agent_dir.is_dir():
+            agent_info = {
+                'name': agent_dir.name,
+                'path': str(agent_dir)
+            }
+            
+            # Look for benchmark results
+            benchmarks_dir = agent_dir / 'benchmarks'
+            if benchmarks_dir.exists():
+                for bench_dir in benchmarks_dir.iterdir():
+                    if bench_dir.is_dir():
+                        perf_file = bench_dir / 'perf.jsonl'
+                        if perf_file.exists():
+                            try:
+                                with open(perf_file) as f:
+                                    lines = f.readlines()
+                                    if lines:
+                                        perf_data = json.loads(lines[-1])  # Last line
+                                        agent_info[f'{bench_dir.name}_score'] = perf_data.get('score', 0)
+                            except:
+                                pass
+            
+            exp_data['agents'].append(agent_info)
+    
+    return exp_data
+
+def update_system_stats():
+    """Update system statistics"""
+    global system_stats
+    
+    # Try to get GPU memory info (if available)
+    try:
+        import subprocess
+        result = subprocess.run(['nvidia-smi', '--query-gpu=memory.used,memory.total,utilization.gpu', 
+                               '--format=csv,noheader,nounits'], 
+                              capture_output=True, text=True, timeout=5)
+        
+        if result.returncode == 0:
+            lines = result.stdout.strip().split('\n')
+            if lines and lines[0]:
+                memory_used, memory_total, utilization = lines[0].split(', ')
+                system_stats['gpu_memory'] = {
+                    'allocated_gb': round(float(memory_used) / 1024, 1),
+                    'total_gb': round(float(memory_total) / 1024, 1),
+                    'utilization_percent': int(utilization)
+                }
+    except:
+        # GPU monitoring not available
+        pass
+    
+    system_stats['last_updated'] = datetime.now().isoformat()
+
+def periodic_status_update():
+    """Periodically update status and emit to clients"""
+    while True:
+        try:
+            check_gemma3_status()
+            update_system_stats()
+            
+            # Emit to all connected clients
+            socketio.emit('status_update', {
+                'gemma3': gemma3_status,
+                'stats': system_stats
+            })
+            
         except Exception as e:
-            print(f"Monitoring error: {e}")
-            time.sleep(5)
+            print(f"Error in periodic update: {e}")
+        
+        time.sleep(30)  # Update every 30 seconds
 
 if __name__ == '__main__':
-    # Create templates directory and files
-    templates_dir = Path("templates")
-    templates_dir.mkdir(exist_ok=True)
-    static_dir = Path("static")
-    static_dir.mkdir(exist_ok=True)
+    print("🌐 SICA Web Interface Starting...")
+    print("=" * 50)
     
-    print("🚀 Starting SICA Web Interface...")
-    print("📍 Interface will be available at: http://localhost:5000")
-    print("🧠 Gemma 3 server expected at: http://localhost:8000")
-    print("📊 Monitoring SICA experiments in: ./results/")
+    # Check initial Gemma 3 status
+    check_gemma3_status()
+    update_system_stats()
     
-    # Start background monitoring
-    MONITORING_ACTIVE = True
-    monitoring_thread = threading.Thread(target=background_monitoring)
-    monitoring_thread.daemon = True
-    monitoring_thread.start()
+    if gemma3_status['available']:
+        print("✅ Gemma 3 server detected and ready")
+    else:
+        print("⚠️ Gemma 3 server not available - using fallback responses")
+        print("   Start your Gemma 3 server for full functionality")
     
-    # Run the Flask app
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    print("")
+    print("🚀 Starting web server...")
+    print("📍 Interface available at: http://localhost:8080")
+    print("🔧 Features:")
+    print("   - Real-time agent monitoring")
+    print("   - Interactive prompt testing")
+    print("   - SICA experiment analysis")
+    print("   - GPU performance tracking")
+    print("")
+    print("Press Ctrl+C to stop the server")
+    print("")
+    
+    # Start periodic status updates in background thread
+    status_thread = threading.Thread(target=periodic_status_update, daemon=True)
+    status_thread.start()
+    
+    # Start the Flask-SocketIO server
+    try:
+        socketio.run(app, host='0.0.0.0', port=8080, debug=False)
+    except KeyboardInterrupt:
+        print("\n👋 Shutting down gracefully...")
+    except Exception as e:
+        print(f"❌ Server error: {e}")

@@ -1,8 +1,8 @@
 EXECUTION TREE
 ==============
-1 main [agent_a406b4df] (0.6s | 0 tokens (cached 0.00%) | $0.000 | Failed)
+1 main [agent_967e83ff] (159013.5s | 0 tokens (cached 0.00%) | $0.000 | Failed)
    [Stats] Events: 
 
-Total Duration: 0.6s
+Total Duration: 159013.5s
 Total Tokens: 0 (of which cached 0)
 Total Cost: $0.000

@@ -260,7 +260,7 @@ class CallGraphManager:
 
         try:
             # Try to acquire lock with timeout
-            # async with asyncio.wait_for(5):  # 5-second timeout
+            async with asyncio.wait_for(5):  # 5-second timeout
                 async with self._node_lock:
                     wait_time = time.monotonic() - start_time
                     self._token_tracking_stats["total_wait_time"] += wait_time
